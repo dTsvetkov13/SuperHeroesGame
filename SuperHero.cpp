@@ -1,7 +1,5 @@
 #include "SuperHero.h"
 
-//TODO: scopes
-
 SuperHero::SuperHero() = default;
 
 SuperHero::SuperHero(const MyString& n, const MyString& s, const MyString& hn,

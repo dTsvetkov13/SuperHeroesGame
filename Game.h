@@ -54,9 +54,9 @@ private:
     bool isAdminLogged() const;
 
     //TODO: check this; make sure to be non-const
-    Vector<Player> getRanking() const; //const
-    RequestReturnModel<Vector<Admin>> getAdmins() const; //const
-    RequestReturnModel<Vector<Player>> getPlayers()  const; //const
+    Vector<Player> getRanking() const;
+    RequestReturnModel<Vector<Admin>> getAdmins() const;
+    RequestReturnModel<Vector<Player>> getPlayers()  const;
 
     bool addAdmin(const Admin&);
     bool addPlayer(const Player&);

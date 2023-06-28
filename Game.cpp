@@ -19,10 +19,6 @@ void Game::init()
 
 void Game::loadGame()
 {
-	//this->_players = Vector<Player>>(new Vector<Player>());
-	//this->_admins = SharedPtr<Vector<Admin>>(new Vector<Admin>());
-	//this->_graveyard = SharedPtr<Vector<SuperHero>>(new Vector<SuperHero>());
-
 	isNewGame = true;
 
 	if (isNewGame)
@@ -228,13 +224,7 @@ bool Game::signIn(const MyString& username, const MyString& password, UserRole r
 			if ((_admins)[i]->getUserName() == username
 				&& (_admins)[i]->getPassword() == password)
 			{
-				//_loggedUser = SharedPtr<User>(&_admins[i]);
 				_loggedUser = SharedPtr<User>((static_cast<User*>(&(*_admins[i]))));
-
-
-
-				//_loggedUser = SharedPtr<User>((_admins)[i]);
-
 				return true; //Success
 			}
 		}
@@ -253,7 +243,7 @@ bool Game::signIn(const MyString& username, const MyString& password, UserRole r
 				}
 
 				(_players)[i]->logged();
-				_loggedUser = SharedPtr<User>((static_cast<User*>(&(*_players[i])))); //SharedPtr<User>(new Player((_players)[i]));
+				_loggedUser = SharedPtr<User>((static_cast<User*>(&(*_players[i]))));
 				isFirstPlayerToLog = false;
 				return true; //Success
 			}
@@ -604,12 +594,7 @@ MarketSaleResult Game::buySuperHero(const MyString& superHeroName)
 			//Possible solution: make the collection of players to SharedPtr<Vector<SharedPtr<Player>>>,
 			//but at this stage (no time at all) I cannot try it
 
-			//Vector<Player> players = (*Game::getInstance().getPlayers().data);
-
-			//loggedPlayer->addSuperHero(heroes[i]);
-			//loggedPlayer->addMoney(-heroes[i].getBuyPrice());
-
-			for (int j = 0; j < _players.getSize(); i++)
+			/*for (int j = 0; j < _players.getSize(); i++)
 			{
 				if (_players[i]->getUserName() == loggedPlayer->getUserName())
 				{
@@ -617,7 +602,7 @@ MarketSaleResult Game::buySuperHero(const MyString& superHeroName)
 					_players[i]->addMoney(-heroes[i].getBuyPrice());
 					break;
 				}
-			}
+			}*/
 
 			_market.removeSuperHeroByIndex(i);
 			break;
