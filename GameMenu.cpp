@@ -40,27 +40,6 @@ Vector<MyString> split(const char* str, char delimiter)
 	return result;
 }
 
-PowerType getType(const MyString& type)
-{
-	//Here we can use tolower(), but I suggest that it's not allowed
-	if (type == "Earth" || type == "earth")
-	{
-		return PowerType::Earth;
-	}
-	else if (type == "Fire" || type == "fire")
-	{
-		return PowerType::Fire;
-	}
-	else if (type == "Water" || type == "water")
-	{
-		return PowerType::Water;
-	}
-	else
-	{
-		throw std::invalid_argument("");
-	}
-}
-
 void GameMenu::addPlayerFromMenu() const
 {
 	char nameBuff[100];
@@ -135,7 +114,7 @@ bool GameMenu::addHero() const
 
 	try
 	{
-		 type = getType(powerType);
+		 type = Game::getType(powerType);
 	}
 	catch (const std::invalid_argument&)
 	{

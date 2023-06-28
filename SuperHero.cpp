@@ -1,4 +1,6 @@
 #include "SuperHero.h"
+#include "MyString.h"
+#include "Game.h"
 
 SuperHero::SuperHero() = default;
 
@@ -86,4 +88,24 @@ void SuperHero::displayInfo() const
     std::cout << "Power: " << power << std::endl;
     std::cout << "Buy Price: " << buyPrice << std::endl;
     std::cout << "Attack Mode: " << static_cast<int>(attackMode) << std::endl;
+}
+
+std::ifstream& operator>>(std::ifstream& ifs, SuperHero& hero)
+{
+    MyString temp;
+    double tempNum;
+
+    ifs >> temp;
+    hero.setHeroName(temp);
+
+    ifs >> tempNum;
+    hero.setBuyPrice(tempNum);
+
+    ifs >> temp;
+    hero.setPowerType(Game::getInstance().getType(temp));
+
+    ifs >> tempNum;
+    hero.setPower(tempNum);
+
+    return ifs;
 }

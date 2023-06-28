@@ -44,7 +44,6 @@ private:
     bool isNewGame = false;
     bool isFirstPlayerToLog = true;
 
-
     Game();
 
     void loadGame();
@@ -82,6 +81,7 @@ private:
     Vector<P> getVector(const Vector<SharedPtr<P>>& v) const;
 
     bool isThereSuchUser(const MyString& name, UserRole role) const;
+
 public:
     static Game& getInstance();
     void play();
@@ -89,6 +89,8 @@ public:
     inline GameConfig getConfig() const { return _config; }
 
     ~Game();
+
+    static PowerType getType(const MyString& type);
 
     friend class GameMenu;
 };

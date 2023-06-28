@@ -1,10 +1,10 @@
 Config
 500 1000 50 200
-Players0
-Admins1
+Players 0
+Admins 1
 admin !&  !& Admin1 
-Market3
-Ironman150Water200
-Ironman150Water200
-Ironman150Water200
-Graveyard0
+Market 3
+Ironman 150 Water 200
+Ironman 150 Water 200
+Ironman 150 Water 200
+Graveyard 0

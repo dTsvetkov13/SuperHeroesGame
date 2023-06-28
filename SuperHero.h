@@ -2,6 +2,8 @@
 
 #include "MyString.h";
 
+#include <fstream>
+
 enum class PowerType { Fire, Earth, Water };
 
 enum class HeroAttackMode { None, Defense, Attack };
@@ -39,4 +41,6 @@ public:
     void setAttackMode(HeroAttackMode am);
 
     void displayInfo() const;
+
+    friend std::ifstream& operator>>(std::ifstream& ifs, SuperHero& player);
 };

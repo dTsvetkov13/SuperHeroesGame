@@ -41,9 +41,7 @@ void Game::loadGame()
 	}
 	else
 	{
-		this->_market.addSuperHero(SuperHero("", "", "Ironman", PowerType::Water, 200, 150, HeroAttackMode::None));
-		this->_market.addSuperHero(SuperHero("", "", "Ironman", PowerType::Water, 200, 150, HeroAttackMode::None));
-		this->_market.addSuperHero(SuperHero("", "", "Ironman", PowerType::Water, 200, 150, HeroAttackMode::None));
+		loadGameFromFile();
 	}
 }
 
@@ -61,16 +59,39 @@ void Game::loadGameFromFile()
 	ifs >> temp >> tempCount; //Players
 
 	Player tempPlayer;
+	Admin tempAdmin;
+	SuperHero tempHero;
 
 	for (int i = 0; i < tempCount; i++)
 	{
 		ifs >> tempPlayer;
+		_players.pushBack(new Player(tempPlayer));
 	}
 
-	//TODO: finish reading
+	ifs >> temp >> tempCount; //Admins
+
+	for (int i = 0; i < tempCount; i++)
+	{
+		ifs >> tempAdmin;
+		_admins.pushBack(new Admin(tempAdmin));
+	}
+
+	ifs >> temp >> tempCount; //Market
+
+	for (int i = 0; i < tempCount; i++)
+	{
+		ifs >> tempHero;
+		_market.addSuperHero(tempHero);
+	}
+
+	ifs >> temp >> tempCount; //Graveyard
+
+	for (int i = 0; i < tempCount; i++)
+	{
+		ifs >> tempHero;
+		_graveyard.pushBack(new SuperHero(tempHero));
+	}
 }
-
-
 
 Vector<Player> Game::getRanking() const
 {
@@ -253,7 +274,6 @@ bool Game::signIn(const MyString& username, const MyString& password, UserRole r
 	default:
 		break;
 	}
-	
 
 	//Fail
 	return false;
@@ -288,6 +308,27 @@ bool Game::isAdminLogged() const
 	{
 		//user not admin
 		return false;
+	}
+}
+
+PowerType Game::getType(const MyString& type)
+{
+	//Here we can use tolower(), but I suggest that it's not allowed
+	if (type == "Earth" || type == "earth")
+	{
+		return PowerType::Earth;
+	}
+	else if (type == "Fire" || type == "fire")
+	{
+		return PowerType::Fire;
+	}
+	else if (type == "Water" || type == "water")
+	{
+		return PowerType::Water;
+	}
+	else
+	{
+		throw std::invalid_argument("");
 	}
 }
 
@@ -525,7 +566,7 @@ Game::~Game()
 	ofs << _config.playerMoneyPerTurn << " " << _config.startingMoney << " " 
 		<< _config.moneyOnDraw << " " << _config.moneyOnLose << std::endl;
 
-	ofs << "Players" << (_players).getSize() <<  std::endl;
+	ofs << "Players " << (_players).getSize() <<  std::endl;
 
 	for (int i = 0; i < (_players).getSize(); i++)
 	{
@@ -536,7 +577,7 @@ Game::~Game()
 			<< " " << (_players)[i]->getBalance() << std::endl;
 	}
 
-	ofs << "Admins" << (_admins).getSize() << std::endl;
+	ofs << "Admins " << (_admins).getSize() << std::endl;
 
 	for (int i = 0; i < (_admins).getSize(); i++)
 	{
@@ -548,17 +589,17 @@ Game::~Game()
 
 	Vector<SuperHero> heroes = _market.getAllSuperHeroes();
 
-	ofs << "Market" << heroes.getSize() << std::endl;
+	ofs << "Market " << heroes.getSize() << std::endl;
 
 	for (int i = 0; i < heroes.getSize(); i++)
 	{
-		ofs << heroes[i].getHeroName()
-			<< heroes[i].getBuyPrice()
-			<< powerTypeToStringForFile(heroes[i].getPowerType())
+		ofs << heroes[i].getHeroName() << " "
+			<< heroes[i].getBuyPrice() << " "
+			<< powerTypeToStringForFile(heroes[i].getPowerType()) << " "
 			<< heroes[i].getPower() << std::endl;
 	}
 
-	ofs << "Graveyard" << (_graveyard).getSize() << std::endl;
+	ofs << "Graveyard " << (_graveyard).getSize() << std::endl;
 
 	for (int i = 0; i < (_graveyard).getSize(); i++)
 	{
