@@ -14,7 +14,7 @@ Player::Player(const MyString& name, const MyString& username, const MyString& p
 Player::Player(const MyString& name, const MyString& email, const MyString& username, const MyString& password)
 	: User(name, email, username, password, UserRole::Player)
 {
-	this->money = Game::getInstance().getConfig().startingMoney;
+	this->money = 0;
 	this->timeLogged = 0;
 }
 
@@ -130,4 +130,17 @@ std::ifstream& operator>>(std::ifstream& ifs, Player& player)
 	ifs >> player.money;
 
 	return ifs;
+}
+
+void Player::setMoney(double money)
+{
+	if (money > 0)
+	{
+		this->money = money;
+	}
+}
+
+void Player::setLogsCount(uint8_t value)
+{
+	this->timeLogged = value;
 }

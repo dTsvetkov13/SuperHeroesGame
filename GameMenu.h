@@ -5,7 +5,6 @@
 class GameMenu
 {
 private:
-	void menu() const;
 	void startMenuOperation(const MyString& oper) const;
 	void showLoggedUserMenu() const;
 	void loggedUserMenuOperation(const MyString&) const;
@@ -19,5 +18,7 @@ private:
 	void gameConfig() const;
 public:
 	GameMenu();
+
+	void menu() const;
 };
 

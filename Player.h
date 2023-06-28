@@ -24,12 +24,16 @@ public:
 	int getSuperHeroIndex(const MyString& heroName) const;
 	void changeSuperHeroAtackMode(const MyString& heroName, HeroAttackMode mode);
 
+	void setMoney(double money);
+
 	void addSuperHero(const SuperHero&);
 	void addSuperHero(SuperHero&&);
 
 	bool removeHero(const MyString& heroName);
 
 	void addMoney(double value);
+
+	void setLogsCount(uint8_t);
 
 	inline void logged() { timeLogged++; }
 	inline uint8_t getTimeLogged() const { return timeLogged; }

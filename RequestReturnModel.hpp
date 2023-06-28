@@ -9,16 +9,16 @@ public:
 	bool isAccepted;
 	SharedPtr<T> data;
 	
-	RequestReturnModel<T>(bool isAccepted, const SharedPtr<T>& ptr)
+	RequestReturnModel<T>(bool isAccepted, T ptr)
 	{
 		this->isAccepted = isAccepted;
-		data = ptr;
+		data = SharedPtr<T>(new T(ptr));
 	}
 
-	RequestReturnModel<T>(bool isAccepted, const SharedPtr<T>&& ptr)
+	/*RequestReturnModel<T>(bool isAccepted, T&& ptr)
 	{
 		this->isAccepted = isAccepted;
-		data = std::move(ptr);
-	}
+		data = SharedPtr<T>(std::move(ptr));
+	}*/
 };
 

@@ -10,20 +10,24 @@ Game& Game::getInstance()
 
 Game::Game()
 {
+}
+
+void Game::init()
+{
 	loadGame();
 }
 
 void Game::loadGame()
 {
-	this->_players = SharedPtr<Vector<Player>>(new Vector<Player>());
-	this->_admins = SharedPtr<Vector<Admin>>(new Vector<Admin>());
-	this->_graveyard = SharedPtr<Vector<SuperHero>>(new Vector<SuperHero>());
+	//this->_players = Vector<Player>>(new Vector<Player>());
+	//this->_admins = SharedPtr<Vector<Admin>>(new Vector<Admin>());
+	//this->_graveyard = SharedPtr<Vector<SuperHero>>(new Vector<SuperHero>());
 
 	isNewGame = true;
 
 	if (isNewGame)
 	{
-		(*_admins).pushBack(Admin("admin", "Admin1"));
+		(_admins).pushBack(new Admin("admin", "Admin1"));
 
 		this->_market.addSuperHero(SuperHero("", "", "Ironman", PowerType::Water, 200, 150, HeroAttackMode::None));
 		this->_market.addSuperHero(SuperHero("", "", "Ironman", PowerType::Water, 200, 150, HeroAttackMode::None));
@@ -33,6 +37,11 @@ void Game::loadGame()
 		_config.moneyOnDraw = 50;
 		_config.moneyOnLose = 200;
 		_config.playerMoneyPerTurn = 500;
+
+		for (int i = 0; i < _players.getSize(); i++)
+		{
+			_players[i]->setMoney(_config.startingMoney);
+		}
 	}
 	else
 	{
@@ -65,9 +74,11 @@ void Game::loadGameFromFile()
 	//TODO: finish reading
 }
 
-const Vector<Player>& Game::getRanking() const
+
+
+Vector<Player> Game::getRanking() const
 {
-	Vector<Player> sortedPlayers = *_players;
+	Vector<Player> sortedPlayers = getVector<Player>(_players);
 
 	Player key;
 
@@ -90,20 +101,56 @@ const Vector<Player>& Game::getRanking() const
 
 RequestReturnModel<Vector<Admin>> Game::getAdmins() const
 {
-	return RequestReturnModel<Vector<Admin>>(isAdminLogged(), this->_admins);
+	return RequestReturnModel<Vector<Admin>>(isAdminLogged(), getVector<Admin>(this->_admins));//getVector<Admin>(this->_admins));
 }
 
-//Make it return ViewModel
+//TODO: Make it return ViewModel
 RequestReturnModel<Vector<Player>> Game::getPlayers() const
 {
-	return RequestReturnModel<Vector<Player>>(true, this->_players);
+	return RequestReturnModel<Vector<Player>>(true, getVector<Player>(this->_players));
+}
+
+bool Game::isThereSuchUser(const MyString& name, UserRole role) const
+{
+	switch (role)
+	{
+	case(UserRole::Admin):
+	{
+		for (int i = 0; i < _admins.getSize(); i++)
+		{
+			if (_admins[i]->getUserName() == name)
+			{
+				return true;
+			}
+		}
+	}
+	case(UserRole::Player):
+	{
+		for (int i = 0; i < _players.getSize(); i++)
+		{
+			if (_players[i]->getUserName() == name)
+			{
+				return true;
+			}
+		}
+	}
+	default:
+		break;
+	}
+
+	return false;
 }
 
 bool Game::addAdmin(const Admin& admin)
 {
 	if (isAdminLogged())
 	{
-		(*this->_admins).pushBack(admin);
+		if (isThereSuchUser(admin.getUserName(), UserRole::Admin))
+		{
+			return false;
+		}
+
+		(this->_admins).pushBack(new Admin(admin));
 		return true;
 	}
 	return false;
@@ -116,33 +163,56 @@ bool Game::addPlayer(const Player& player)
 		//error
 		return false;
 	}
-	(*this->_players).pushBack(player);
+
+	if (isThereSuchUser(player.getUserName(), UserRole::Player))
+	{
+		return false;
+	}
+
+	(_players).pushBack(new Player(player));
+	_players[_players.getSize() - 1]->setMoney(_config.startingMoney);
+	_players[_players.getSize() - 1]->setLogsCount(getPlayerMostLogsCount());
 	return true;
+}
+
+uint8_t Game::getPlayerMostLogsCount() const
+{
+	int mostLogs = 0;
+
+	for (int i = 0; i < (_players).getSize(); i++)
+	{
+		if ((_players)[i]->getTimeLogged() > mostLogs)
+		{
+			mostLogs = (_players)[i]->getTimeLogged();
+		}
+	}
+
+	return mostLogs;
 }
 
 void Game::checkForTurnPaying()
 {
 	int mostLogs = 0;
-	int mostLogsPlayersCount = 0;
+	int playersWithMostLogsCount = 0;
 
-	for (int i = 0; i < (*_players).getSize(); i++)
+	for (int i = 0; i < (_players).getSize(); i++)
 	{
-		if ((*_players)[i].getTimeLogged() > mostLogs)
+		if ((_players)[i]->getTimeLogged() > mostLogs)
 		{
-			mostLogs = (*_players)[i].getTimeLogged();
-			mostLogsPlayersCount = 1;
+			mostLogs = (_players)[i]->getTimeLogged();
+			playersWithMostLogsCount = 1;
 		}
-		else if ((*_players)[i].getTimeLogged() == mostLogs)
+		else if ((_players)[i]->getTimeLogged() == mostLogs)
 		{
-			mostLogsPlayersCount++;
+			playersWithMostLogsCount++;
 		}
 	}
 
-	if (mostLogsPlayersCount == 1)
+	if (playersWithMostLogsCount == 1)
 	{
-		for (int i = 0; i < (*_players).getSize(); i++)
+		for (int i = 0; i < _players.getSize(); i++)
 		{
-			(*this->_players)[i].addMoney(this->_config.playerMoneyPerTurn);
+			(_players)[i]->addMoney(this->_config.playerMoneyPerTurn);
 		}
 	}
 }
@@ -153,14 +223,17 @@ bool Game::signIn(const MyString& username, const MyString& password, UserRole r
 	{
 	case UserRole::Admin:
 	{
-		for (int i = 0; i < (*_admins).getSize(); i++)
+		for (int i = 0; i < (_admins).getSize(); i++)
 		{
-			if ((*_admins)[i].getUserName() == username
-				&& (*_admins)[i].getPassword() == password)
+			if ((_admins)[i]->getUserName() == username
+				&& (_admins)[i]->getPassword() == password)
 			{
-				_loggedUser = SharedPtr<User>(new Admin((*_admins)[i]));
+				//_loggedUser = SharedPtr<User>(&_admins[i]);
+				_loggedUser = SharedPtr<User>((static_cast<User*>(&(*_admins[i]))));
 
-				//_loggedUser = SharedPtr<User>((*_admins)[i]);
+
+
+				//_loggedUser = SharedPtr<User>((_admins)[i]);
 
 				return true; //Success
 			}
@@ -169,15 +242,19 @@ bool Game::signIn(const MyString& username, const MyString& password, UserRole r
 	}
 	case UserRole::Player:
 	{
-		for (int i = 0; i < (*_players).getSize(); i++)
+		for (int i = 0; i < (_players).getSize(); i++)
 		{
-			if ((*_players)[i].getUserName() == username
-				&& (*_players)[i].getPassword() == password)
+			if ((_players)[i]->getUserName() == username
+				&& (_players)[i]->getPassword() == password)
 			{
-				_loggedUser = SharedPtr<User>(new Player((*_players)[i]));
-				(*_players)[i].logged();
-				
-				checkForTurnPaying();
+				if (!isFirstPlayerToLog)
+				{
+					checkForTurnPaying();
+				}
+
+				(_players)[i]->logged();
+				_loggedUser = SharedPtr<User>((static_cast<User*>(&(*_players[i])))); //SharedPtr<User>(new Player((_players)[i]));
+				isFirstPlayerToLog = false;
 				return true; //Success
 			}
 		}
@@ -226,7 +303,9 @@ bool Game::isAdminLogged() const
 
 void Game::play()
 {
-	GameMenu();
+	init();
+
+	GameMenu().menu();
 }
 
 void Game::deleteUser(const MyString& name)
@@ -235,11 +314,11 @@ void Game::deleteUser(const MyString& name)
 
 	if (isAdminLogged() && ((*_loggedUser).getUserName() == name))
 	{
-		for (int i = 0; i < (*_admins).getSize(); i++)
+		for (int i = 0; i < (_admins).getSize(); i++)
 		{
-			if ((*_admins)[i].getUserName() == (*_loggedUser).getUserName())
+			if ((_admins)[i]->getUserName() == (*_loggedUser).getUserName())
 			{
-				(*_admins).popAt(i);
+				(_admins).popAt(i);
 				isAdmin = true;
 				break;
 			}
@@ -250,11 +329,11 @@ void Game::deleteUser(const MyString& name)
 	{
 		if (isAdminLogged() || (((*_loggedUser).getUserName() == name)))
 		{
-			for (int i = 0; i < (*_players).getSize(); i++)
+			for (int i = 0; i < (_players).getSize(); i++)
 			{
-				if ((*_players)[i].getUserName() == (*_loggedUser).getUserName())
+				if ((_players)[i]->getUserName() == (*_loggedUser).getUserName())
 				{
-					(*_players).popAt(i);
+					(_players).popAt(i);
 					break;
 				}
 			}
@@ -279,20 +358,24 @@ AttackResult Game::loggedUserAttack(const MyString& otherName, const MyString& c
 		return result;
 	}
 
-	Player* loggedPlayer = nullptr;
-	Player* otherPlayer = nullptr;
+	SharedPtr<Player> loggedPlayer = nullptr;
+	SharedPtr<Player> otherPlayer = nullptr;
 	loggedPlayer = static_cast<Player*>(&(*(Game::getInstance()._loggedUser)));
 
-	for (int i = 0; i < (*_players).getSize(); i++)
+	for (int i = 0; i < (_players).getSize(); i++)
 	{
-		if ((*_players)[i].getUserName() == otherName)
+		if ((_players)[i]->getUserName() == otherName)
 		{
-			otherPlayer = &(*_players)[i];
+			otherPlayer = (_players)[i];
 			break;
 		}
 	}
 
-	if (otherPlayer == nullptr)
+	try
+	{
+		(*otherPlayer);
+	}
+	catch (...)
 	{
 		result.hasError = true;
 		result.error = "Wrong player name!";
@@ -390,7 +473,7 @@ AttackResult Game::loggedUserAttack(const MyString& otherName, const MyString& c
 	{
 		powerDiff *= -1;
 
-		(*Game::getInstance()._graveyard).pushBack(otherHero);
+		_graveyard.pushBack(new SuperHero(otherHero));
 		otherPlayer->removeHero(otherHero.getHeroName());
 		loggedPlayer->addMoney(powerDiff);
 
@@ -403,7 +486,7 @@ AttackResult Game::loggedUserAttack(const MyString& otherName, const MyString& c
 	}
 	else if(powerDiff > 0)
 	{
-		(*Game::getInstance()._graveyard).pushBack(currHero);
+		_graveyard.pushBack(new SuperHero(currHero));
 		loggedPlayer->removeHero(currHero.getHeroName());
 		loggedPlayer->addMoney(-(powerDiff*2));
 		otherPlayer->addMoney(Game::getInstance().getConfig().moneyOnLose); //z
@@ -422,7 +505,7 @@ AttackResult Game::loggedUserAttack(const MyString& otherName, const MyString& c
 	return result;
 }
 
-const MyString& powerTypeToStringForFile(PowerType type)
+MyString powerTypeToStringForFile(PowerType type)
 {
 	switch (type)
 	{
@@ -452,25 +535,25 @@ Game::~Game()
 	ofs << _config.playerMoneyPerTurn << " " << _config.startingMoney << " " 
 		<< _config.moneyOnDraw << " " << _config.moneyOnLose << std::endl;
 
-	ofs << "Players" << (*_players).getSize() <<  std::endl;
+	ofs << "Players" << (_players).getSize() <<  std::endl;
 
-	for (int i = 0; i < (*_players).getSize(); i++)
+	for (int i = 0; i < (_players).getSize(); i++)
 	{
-		ofs << (*_players)[i].getUserName()
-			<< " !& " << (*_players)[i].getNames()
-			<< " !& " << (*_players)[i].getPassword()
-			<< " " << (*_players)[i].getEmail()
-			<< " " << (*_players)[i].getBalance() << std::endl;
+		ofs << (_players)[i]->getUserName()
+			<< " !& " << (_players)[i]->getNames()
+			<< " !& " << (_players)[i]->getPassword()
+			<< " " << (_players)[i]->getEmail()
+			<< " " << (_players)[i]->getBalance() << std::endl;
 	}
 
-	ofs << "Admins" << (*_admins).getSize() << std::endl;
+	ofs << "Admins" << (_admins).getSize() << std::endl;
 
-	for (int i = 0; i < (*_admins).getSize(); i++)
+	for (int i = 0; i < (_admins).getSize(); i++)
 	{
-		ofs << (*_admins)[i].getUserName()
-			<< " !& " << (*_admins)[i].getNames()
-			<< " !& " << (*_admins)[i].getPassword()
-			<< " " << (*_admins)[i].getEmail() << std::endl;
+		ofs << (_admins)[i]->getUserName()
+			<< " !& " << (_admins)[i]->getNames()
+			<< " !& " << (_admins)[i]->getPassword()
+			<< " " << (_admins)[i]->getEmail() << std::endl;
 	}
 
 	Vector<SuperHero> heroes = _market.getAllSuperHeroes();
@@ -485,13 +568,74 @@ Game::~Game()
 			<< heroes[i].getPower() << std::endl;
 	}
 
-	ofs << "Graveyard" << (*_graveyard).getSize() << std::endl;
+	ofs << "Graveyard" << (_graveyard).getSize() << std::endl;
 
-	for (int i = 0; i < (*_graveyard).getSize(); i++)
+	for (int i = 0; i < (_graveyard).getSize(); i++)
 	{
-		ofs << (*_graveyard)[i].getHeroName()
-			<< (*_graveyard)[i].getBuyPrice()
-			<< powerTypeToStringForFile((*_graveyard)[i].getPowerType())
-			<< (*_graveyard)[i].getPower() << std::endl;
+		ofs << (_graveyard)[i]->getHeroName()
+			<< (_graveyard)[i]->getBuyPrice()
+			<< powerTypeToStringForFile((_graveyard)[i]->getPowerType())
+			<< (_graveyard)[i]->getPower() << std::endl;
 	}
+}
+
+MarketSaleResult Game::buySuperHero(const MyString& superHeroName)
+{
+	Vector<SuperHero> heroes = _market.getAllSuperHeroes();
+	MarketSaleResult result;
+
+	for (int i = 0; i < heroes.getSize(); i++)
+	{
+		if (heroes[i].getHeroName() == superHeroName)
+		{
+			Player* loggedPlayer = static_cast<Player*>(&(*_loggedUser));
+			if (loggedPlayer->getBalance() < heroes[i].getBuyPrice())
+			{
+				result.hasError = true;
+				result.error = "You cannot afford this hero!";
+				//std::cout << "You cannot afford this hero!" << std::endl;
+				return result;
+			}
+
+			loggedPlayer->addSuperHero(heroes[i]);
+			loggedPlayer->addMoney(-heroes[i].getBuyPrice());
+
+			//We should find the player in the collection of players and update it.
+			//Possible solution: make the collection of players to SharedPtr<Vector<SharedPtr<Player>>>,
+			//but at this stage (no time at all) I cannot try it
+
+			//Vector<Player> players = (*Game::getInstance().getPlayers().data);
+
+			//loggedPlayer->addSuperHero(heroes[i]);
+			//loggedPlayer->addMoney(-heroes[i].getBuyPrice());
+
+			for (int j = 0; j < _players.getSize(); i++)
+			{
+				if (_players[i]->getUserName() == loggedPlayer->getUserName())
+				{
+					_players[i]->addSuperHero(heroes[i]);
+					_players[i]->addMoney(-heroes[i].getBuyPrice());
+					break;
+				}
+			}
+
+			_market.removeSuperHeroByIndex(i);
+			break;
+		}
+	}
+
+	result.hasError = false;
+
+	return result;
+}
+
+double Game::getLoggedPlayerBalance() const
+{
+	return static_cast<const Player*>(&(*_loggedUser))->getBalance();
+}
+
+void Game::changeLoggedUserSuperHeroAttackMode(const MyString& heroName, HeroAttackMode attackMode)
+{
+	static_cast<Player*>(&(*_loggedUser))
+		->changeSuperHeroAtackMode(heroName, HeroAttackMode::Attack);
 }

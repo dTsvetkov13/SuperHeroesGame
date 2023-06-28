@@ -9,10 +9,7 @@
 #include "Validator.h"
 
 
-GameMenu::GameMenu()
-{
-	menu();
-}
+GameMenu::GameMenu() {}
 
 Vector<MyString> split(const char* str, char delimiter)
 {
@@ -99,7 +96,7 @@ void GameMenu::addPlayerFromMenu() const
 	}
 }
 
-const MyString& powerTypeToString(PowerType type)
+MyString powerTypeToString(PowerType type)
 {
 	switch (type)
 	{
@@ -228,6 +225,10 @@ void GameMenu::startMenuOperation(const MyString& operation) const
 		std::cout << "Thank you! See ya!" << std::endl;
 		exit(0);
 	}
+	else
+	{
+		std::cout << "Invalid operation!" << std::endl;
+	}
 }
 
 void GameMenu::addHeroesWhenMarketEmpty() const
@@ -243,7 +244,7 @@ void GameMenu::addHeroesWhenMarketEmpty() const
 
 		if (choice == "pick")
 		{
-			Vector<SuperHero> graveyard = (*Game::getInstance()._graveyard);
+			Vector<SuperHero> graveyard = Game::getInstance().getVector(Game::getInstance()._graveyard);
 			unsigned heroNum = 1;
 
 			if (graveyard.getSize() <= 0)
@@ -273,7 +274,7 @@ void GameMenu::addHeroesWhenMarketEmpty() const
 			}
 
 			Game::getInstance()._market.addSuperHero(graveyard[heroNum - 1]);
-			(*Game::getInstance()._graveyard).popAt(heroNum - 1);
+			(Game::getInstance()._graveyard).popAt(heroNum - 1);
 
 			std::cout << "\x1B[2J\x1B[H";
 
@@ -414,6 +415,11 @@ void GameMenu::adminOperations(const MyString& operation) const
 
 				std::cout << std::endl;
 			}
+
+			if ((*result.data).getSize() <= 0)
+			{
+				std::cout << "There are no players to show!" << std::endl;
+			}
 		}
 	}
 	else if (operation == "show admins")
@@ -424,6 +430,12 @@ void GameMenu::adminOperations(const MyString& operation) const
 
 		if (result.isAccepted)
 		{
+			if ((*result.data).getSize() <= 1)
+			{
+				std::cout << "There are no admins to show!" << std::endl;
+				return;
+			}
+
 			for (int i = 0; i < (*result.data).getSize(); i++)
 			{
 				std::cout << i + 1 << ". "
@@ -453,8 +465,7 @@ void GameMenu::playerOperations(const MyString& operation) const
 	if (operation == "show balance")
 	{
 		std::cout << "Show balance" << std::endl;
-
-		std::cout << static_cast<Player*>(&(*(Game::getInstance()._loggedUser)))->getBalance() << std::endl;
+		std::cout << Game::getInstance().getLoggedPlayerBalance() << std::endl;
 	}
 	else if (operation == "show market")
 	{
@@ -496,7 +507,7 @@ void GameMenu::playerOperations(const MyString& operation) const
 				}
 
 				std::cout << playerCount << ". " << (*result.data)[i].getUserName()
-							<< " " << (*result.data)[i].getBalance();
+							<< " " << (*result.data)[i].getBalance() << std::endl;
 				//heroes
 				Player* currPlayer = static_cast<Player*>(&((*result.data)[i]));
 				size_t heroesSize = currPlayer->getSuperHeroes().getSize();
@@ -525,8 +536,7 @@ void GameMenu::playerOperations(const MyString& operation) const
 		std::cout << "Enter the superhero you want to set to attack: ";
 		std::cin >> heroName;
 
-		static_cast<Player*>(&(*(Game::getInstance()._loggedUser)))
-			->changeSuperHeroAtackMode(heroName, HeroAttackMode::Attack);
+		Game::getInstance().changeLoggedUserSuperHeroAttackMode(heroName, HeroAttackMode::Attack);
 
 		std::cout << heroName << " set to attack successfully!" << std::endl;
 	}
@@ -538,8 +548,7 @@ void GameMenu::playerOperations(const MyString& operation) const
 		std::cout << "Enter the superhero you want to set to defense: ";
 		std::cin >> heroName;
 
-		static_cast<Player*>(&(*(Game::getInstance()._loggedUser)))
-			->changeSuperHeroAtackMode(heroName, HeroAttackMode::Defense);
+		Game::getInstance().changeLoggedUserSuperHeroAttackMode(heroName, HeroAttackMode::Defense);
 
 		std::cout << heroName << " set to defence successfully!" << std::endl;
 	}
@@ -552,44 +561,16 @@ void GameMenu::playerOperations(const MyString& operation) const
 		std::cout << "Enter Superhero name from the market you wish to buy: " << std::endl;
 		std::cin >> superHeroName;
 		
-		Vector<SuperHero> heroes = Game::getInstance()._market.getAllSuperHeroes();
+		MarketSaleResult saleResult = Game::getInstance().buySuperHero(superHeroName);
 
-		for (int i = 0; i < heroes.getSize(); i++)
+		if (saleResult.hasError)
 		{
-			if (heroes[i].getHeroName() == superHeroName)
-			{			
-				Player* loggedPlayer = static_cast<Player*>(&(*(Game::getInstance()._loggedUser)));
-				if(loggedPlayer->getBalance() < heroes[i].getBuyPrice())
-				{
-					std::cout << "You cannot affored this hero!" << std::endl;
-					return;
-				}
-
-				loggedPlayer->addSuperHero(heroes[i]);
-				loggedPlayer->addMoney(-heroes[i].getBuyPrice());
-
-				//We should find the player in the collection of players and update it.
-				//Possible solution: make the collection of players to SharedPtr<Vector<SharedPtr<Player>>>,
-				//but at this stage (no time at all) I cannot try it
-
-				Vector<Player> players = (*Game::getInstance().getPlayers().data);
-
-				for (int j = 0; j < players.getSize(); i++)
-				{
-					if (players[i].getUserName() == (*Game::getInstance()._loggedUser).getUserName())
-					{
-						players[i].addSuperHero(heroes[i]);
-						players[i].addMoney(-heroes[i].getBuyPrice());
-						break;
-					}
-				}
-
-				Game::getInstance()._market.removeSuperHeroByIndex(i);
-				break;
-			}
+			std::cout << saleResult.error << std::endl;
 		}
-
-		std::cout << "Successfully bought!" << std::endl;
+		else
+		{
+			std::cout << "Successfully bought!" << std::endl;
+		}
 	}
 	else if (operation == "delete")
 	{
@@ -614,13 +595,21 @@ void GameMenu::playerOperations(const MyString& operation) const
 	}
 	else
 	{
-		std::cout << "Attack player" << std::endl;
-
 		static MyString attackString = MyString("attack");
 
 		if ((operation.length() > attackString.length())
 			&& (operation.substr(0, attackString.length()) == attackString))
 		{
+			std::cout << "Attack player" << std::endl;
+
+			RequestReturnModel<Vector<Player>> playersInGame = Game::getInstance().getPlayers();
+			
+			if (playersInGame.isAccepted && ((*playersInGame.data).getSize() == 1))
+			{
+				std::cout << "There are no players to attack now!" << std::endl;
+				return;
+			}
+
 			MyString name = operation.substr(attackString.length() + 1, operation.length() - (attackString.length() + 1));
 			MyString currentSuperHeroName, otherSuperHeroName;
 
@@ -660,7 +649,10 @@ void GameMenu::playerOperations(const MyString& operation) const
 				std::cout << result.error << std::endl;
 				std::cout << "Enter valid data to attack!" << std::endl;
 			}
-			
+		}
+		else
+		{
+			std::cout << "Invalid operation!" << std::endl;
 		}
 	}
 }
@@ -691,7 +683,7 @@ void GameMenu::menu() const
 	MyString operation;
 	char buff[1024];
 
-	//Game::getInstance().isNewGame = false;
+	Game::getInstance().isNewGame = false;
 
 	if (Game::getInstance().isNewGame)
 	{
@@ -712,14 +704,14 @@ void GameMenu::menu() const
 			}
 		}
 		
-		if (Game::getInstance()._market.getAllSuperHeroes().getSize() < 3)
+		if (Game::getInstance()._market.getAllSuperHeroes().getSize() < Game::getInstance().MINIMUM_HEROES_COUNT)
 		{
 			std::cout << "Now heroes: " << std::endl;
 		}
 
 		Game::getInstance().signIn("admin", "Admin1", UserRole::Admin);
 
-		while (Game::getInstance()._market.getAllSuperHeroes().getSize() < 3)
+		while (Game::getInstance()._market.getAllSuperHeroes().getSize() < Game::getInstance().MINIMUM_HEROES_COUNT)
 		{
 			std::cout << "Add hero: " << std::endl;
 			if (addHero())

@@ -2,7 +2,7 @@
 
 int main()
 {
-		Game::getInstance().play();
+	Game::getInstance().play();
 	
 	return 0;
 }
